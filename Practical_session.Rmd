@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 options(scipen = 999)
 ```
 
-# Analysing tracking data with `moveHMM`
+# Analysing tracking data with moveHMM
 
 In this exercise, we analyse elephant tracking data using hidden Markov models (HMMs). The `R` package `moveHMM` allows us to model step lengths and turning angles using HMMs. We start by installing and loading `moveHMM`:
 
@@ -455,7 +455,6 @@ acf(data_hmm$logODBA, main = "real data", bty = "n")
 acf(na.omit(simdata$logODBA), main = "simulated data", bty = "n")
 ```
 
-
 <!-- ## Model 3: covariates on the transition probabilities -->
 
 <!-- Just like for tracking data, we can include covariates in the hidden state model to capture the effect of environmental or individual-specific variables on the animal's behaviour. In the following, we include the effect of time of day to investigate possible diurnal patterns in the shark's activity. -->
@@ -487,7 +486,6 @@ acf(na.omit(simdata$logODBA), main = "simulated data", bty = "n")
 <!-- } -->
 <!-- ``` -->
 
-<!-- There is some evidence of a time of day effect, such that the high-activity state is most likely to occur in the morning between 5:00 and 10:00. -->
 
 # References
 
