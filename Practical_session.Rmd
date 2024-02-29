@@ -136,7 +136,7 @@ mod <- fitHMM(data = hmm_data,
               stepPar0 = step_par0,
               anglePar0 = angle_par0,
               stationary = TRUE, # we assume a stationary Markov chain
-              verbose = 2)
+              verbose = 0)
 ```
 
 To watch the iterations of the numerical likelhood optimisation -- which can be both meditative but also helpful -- we need to specify `verbose = 2`. The fitted model is stored as `mod`, which is used as an input to the following functions.
@@ -410,7 +410,7 @@ While still not perfect (notable residual autocorrelation, slight lack of fit in
 
 ## Simulating from the estimated model
 
-Another option for checking the model fit is to simulate data from the estimated model and compare it to the observed data. If the model describes the true data well, these two should not deviate substantially.
+Another option for checking the model fit is to simulate data from the estimated model and compare the simulated to the observed data. If the model describes the true data well, then the general patterns of these two should not deviate substantially.
 
 ```{r 3state_sim, fig.width = 7, fig.height = 5, out.width="90%", fig.align="center"}
 simdata = simData(model = hmm_3s, 
@@ -419,21 +419,23 @@ simdata = simData(model = hmm_3s,
 simdata$Time = data_hmm$Time
 
 # Plotting original data coloured by decoded states
-ggplot(head(data_hmm, 500), 
+ggplot(tail(data_hmm, 500), 
        aes(Time, logODBA, col = viterbi_3s, group = NA)) +
   geom_line() +
-  scale_color_manual(values = pal, name = "State")
+  scale_color_manual(values = pal, name = "State") +
+  labs(title = "real data")
 
 # Plotting simulated data coloured by states
-ggplot(head(simdata, 500), 
+ggplot(tail(simdata, 500), 
        aes(Time, logODBA, col = factor(states), group = NA)) +
   geom_line() +
-  scale_color_manual(values = pal, name = "State")
+  scale_color_manual(values = pal, name = "State") +
+  labs(title = "simulated data")
 ```
 
-Overall, our model looks good. We only see minor issues with state 3, as in the real data some sojourn times are very long while most are very short and in the simulated data this is more homogeneous.
+Overall, our model is able to fairly well replicate the main patterns also seen in the real data. We only see minor issues with state 3, which seems to exhibit shorter stays in the observed time series than implied by our model.
 
-We can also visualize the marginal distribution implied by our model:
+We can also visualize the marginal distribution implied by our model, i.e. the overall distribution of logODBA values:
 
 ```{r 3state_sim-hist, fig.width = 7, fig.height = 5, out.width="90%", fig.align="center"}
 # getting state-dependent parameters from fitted model
@@ -441,19 +443,18 @@ mu = hmm_3s$mle$logODBA[1,] # 3 means
 sigma = hmm_3s$mle$logODBA[2,] # 3 standard deviations
 delta = stationary(hmm_3s)[[1]] # stationary distribution
 
+par(mfrow = c(1,2))
 # histogram of original data
-plot(hmm_3s, ask = FALSE, breaks = 50)
+hist(data_hmm$logODBA, prob = TRUE, breaks = 50, border = "white",
+     xlim = c(-5,-1), ylim = c(0,1.5), main = "real data", xlab = "logOBDA")
 
 # histogram of simulated data
 hist(simdata$logODBA, prob = TRUE, breaks = 50, border = "white", 
-     xlim = c(-5,1), ylim = c(0,1.5), main = "Simulated data", xlab = "logOBDA")
-curve(delta[1]*dnorm(x, mu[1], sigma[1]), add = TRUE, lwd=2, col=pal[1], n=500)
-curve(delta[2]*dnorm(x, mu[2], sigma[2]), add = TRUE, lwd=2, col=pal[2], n=500)
-curve(delta[3]*dnorm(x, mu[3], sigma[3]), add = TRUE, lwd=2, col=pal[3], n=500)
+     xlim = c(-5,-1), ylim = c(0,1.5), main="simulated data", xlab="logOBDA")
 ```
 The marginal distribution looks really good!
 
-Lastly, we can investigate the autocorrelation function of the real and simulated data.
+Lastly, we can investigate the autocorrelation function of the real and the simulated data.
 
 ```{r 3state_sim-acf, fig.width = 7, fig.height = 5, out.width="90%", fig.align="center"}
 # autocorrelation function
@@ -461,6 +462,7 @@ par(mfrow = c(1,2))
 acf(data_hmm$logODBA, main = "real data", bty = "n")
 acf(na.omit(simdata$logODBA), main = "simulated data", bty = "n")
 ```
+
 In this case, we find a minor lack of fit regarding larger lags which is really typical for HMM analyses due to the conditional independece assumption. This can be improved by including autoregressive structures in the state-dependent process (Slide 60), but as the inferential focus typically lies on the state process, it might not be worth the extra effort.
 
 ## In-house advertising
