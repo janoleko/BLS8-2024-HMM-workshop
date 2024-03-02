@@ -389,11 +389,10 @@ by installing and loading <code>moveHMM</code>:</p>
 <pre class="r"><code>## Install and load required packages
 # install.packages(&quot;moveHMM&quot;)
 # install.packages(&quot;ggplot2&quot;)
-# install.packages(&quot;sp&quot;)
+# install.packages(&quot;dplyr&quot;)
 library(moveHMM)
 library(ggplot2)
-library(dplyr)
-# library(sp)</code></pre>
+library(dplyr)</code></pre>
 <p>The <code>R</code> package <code>moveHMM</code> has extensive
 documentation in several vignettes:</p>
 <pre class="r"><code>help(package = &quot;moveHMM&quot;)</code></pre>
@@ -895,7 +894,7 @@ ggplot(tail(simdata, 500),
 also seen in the real data. We only see minor issues with state 3, which
 seems to exhibit shorter stays in the observed time series than implied
 by our model.</p>
-<p>We can also visualize the marginal distribution implied by our model,
+<p>We can also visualise the marginal distribution implied by our model,
 i.e. the overall distribution of logODBA values:</p>
 <pre class="r"><code># getting state-dependent parameters from fitted model
 mu = hmm_3s$mle$logODBA[1,] # 3 means

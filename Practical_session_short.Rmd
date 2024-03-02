@@ -2,11 +2,11 @@
 title: "Analysing ecological data with HMMs in R"
 author: "Jan-Ole Koslik, Roland Langrock"
 date: "3 March 2024"
-output: html_document
-# output:
-#     pdf_document:
-#         number_sections: true
-#         toc: false
+# output: html_document
+output:
+    pdf_document:
+        number_sections: true
+        toc: false
 header-includes:
   \renewcommand{\baselinestretch}{1.2}
 fontsize: 12pt
@@ -42,7 +42,7 @@ help(package = "moveHMM")
 
 ## Data pre-processing
 
-Originally, 15 elephants from the Etosha National Park where fitted with GPS collars to collect hourly movement data (@tsalyuk2019temporal). For simplicity, the raw data have already been preprocessed and we consider the track of only one individual. However, we still have a little preprocessing work to do:
+Originally, 15 elephants from the Etosha National Park where fitted with GPS collars to collect hourly movement data (@tsalyuk2019temporal). For simplicity, the raw data have already been preprocessed and we consider the track of only one individual.
 
 ```{r data}
 ## Loading the data
@@ -59,16 +59,6 @@ elephant_data$timeOfDay = hours + (minutes/60)
 ```
 
 The data are in the proper format and can be processed using `prepData` to compute step lengths and turning angles.
-We choose the arguments as follows:
-
-* `trackData` is a data frame of the tracking data, including at least coordinates (either easting/northing or longitude/latitude values), and optionally a field ID (identifiers for the observed individuals). Additional fields are considered as covariates.
-
-* `type` specifies whether the coordinates are easting/northing (`type = "UTM"`) or longitude/latitude (`type = "LL"`) values.
-
-* `coordNames` are the names of the coordinates in the input data frame. The default is `"x"` and `"y"`, so
-we need to call the function with the argument `coordNames = c("location.long", "location.lat")`.
-
-For our data, we hence use:
 
 ```{r prep_data, cache = TRUE}
 ## Compute step lengths and turning angles
@@ -117,16 +107,7 @@ The above initial values provide a good choice, but feel free to try other value
 
 ## Model fitting
 
-To fit an HMM to data, we use `fitHMM`. The most important arguments of this function are:
-
-* `data` is the data frame created by `prepData`.
-* `nbStates` is the number of states.
-* `stepDist` is the distribution assumed for step length.
-* `angleDist` is the distribution assumed for turning angle.
-* `stepPar0` is a vector of initial parameter values for step length.
-* `anglePar0` is a vector of initial parameter values for turning angle.
-
-The function call to fit a simple 3-state HMM to our data is:
+To fit an HMM to data, we use `fitHMM`.
 
 ```{r model_fitting, message = FALSE, results='hide', cache = TRUE}
 ## Fit HMM
@@ -135,10 +116,8 @@ mod <- fitHMM(data = hmm_data,
               stepPar0 = step_par0,
               anglePar0 = angle_par0,
               stationary = TRUE, # we assume a stationary Markov chain
-              verbose = 0)
+              verbose = 2)
 ```
-
-To watch the iterations of the numerical likelhood optimisation -- which can be both meditative but also helpful -- we need to specify `verbose = 2`. The fitted model is stored as `mod`, which is used as an input to the following functions.
 
 ## Results
 
@@ -157,7 +136,7 @@ par(mfrow = c(1, 2))
 plot(mod, plotTracks = TRUE, ask = FALSE)
 ```
 
-States 1 and 2 capture short and moderately long steps, which can be interpreted as resting and foraging behaviour, respectively. State 3 captures long, directed steps, which can be linked to travelling behaviour. To visualise the Viterbi-decoded tracks, we specify `plotTracks = TRUE`.
+States 1 and 2 capture short and moderately long steps, which can be interpreted as resting and foraging behaviour, respectively. State 3 captures long, directed steps, which can be linked to travelling behaviour.
 
 To obtain the decoded state sequence, we can use `viterbi`, `stateProbs`, and `plotStates`:
 
@@ -172,7 +151,7 @@ plotStates(mod, ask = FALSE, animals = 1)
 
 ## Adding covariates on the state transition probabilities
 
-Covariates can be included in the hidden state model to capture the effect of environmental or individual-specific variables on the animal’s behaviour. In `moveHMM`, covariates can be included by specifying a `formula`. Here, we are interested in modelling the diurnal variation present in the elphant's behaviour. Time of day is defined between 0 and 24, and it should have a cyclical effect, i.e., the transition probabilities at 24:00 should match those at 00:00. One way to do this is to use trigonometric functions, as described by @leos2017, where in the simplest case we include one sine and one cosine frequency.
+Covariates can be included in the hidden state model to capture the effect of environmental or individual-specific variables on the animal’s behaviour. In `moveHMM`, covariates can be included by specifying a `formula`. Here, we are interested in modelling the diurnal variation present in the elphant's behaviour.
 
 ```{r timeofday, message = FALSE, results = 'hide', cache = TRUE}
 ## Fit HMM with trigonometric effect of time of day
@@ -181,7 +160,7 @@ mod_tod <- fitHMM(data = hmm_data,
                   stepPar0 = step_par0,
                   anglePar0 = angle_par0,
                   formula = ~ sin(2*pi*timeOfDay/24) + cos(2*pi*timeOfDay/24), 
-                  verbose = 0)
+                  verbose = 2)
 ```
 
 ```{r mod_tod, message = FALSE, results = 'hide', cache = TRUE}
@@ -195,7 +174,7 @@ To visualise the probability of being in either of the 3 states as functions of 
 plotStationary(mod_tod, plotCI = TRUE)
 ```
 
-With the current implementation, these probabilities are only approximately correct - they are essentially shifted by about 1-3 hours - but we will inform the package maintainers how to fix this, so you can expect this functionality to work properly in the near future. At the moment, we propose to look at the decoded states as a function of the time of day to interpret the diurnal variation in activity budgets: 
+With the current implementation, these probabilities are only approximately correct. At the moment, we propose to look at the decoded states as a function of the time of day to interpret the diurnal variation in activity budgets: 
 
 ```{r statesbytod, message = FALSE, results = 'hide', cache = TRUE, fig.width = 6, fig.height = 6, out.width = "50%", fig.align = "center"}
 # summarise relative frequencies by time of day
@@ -228,7 +207,7 @@ mod_tod2 <- fitHMM(data = hmm_data,
                   formula = ~ sin(2*pi*timeOfDay/24)+cos(2*pi*timeOfDay/24)+
                     # aditionally double the frequency
                     sin(2*pi*timeOfDay/12)+cos(2*pi*timeOfDay/12),
-                  verbose = 0)
+                  verbose = 2)
 ```
 
 ## Model selection
@@ -244,7 +223,7 @@ In this case, we find that the most complicated model shows the best fit in term
 
 ## Model checking
 
-Pseudo-residuals are the most common way to check whether an HMM fits the data well. Similarly to linear model residuals, pseudo-residuals should be independent and standard normally distributed if the model assumptions are satisfied. The function `plotPR` produces a quantile-quantile (QQ) plot against the normal distribution, and an autocorrelation function (ACF) plot of the pseudo-residuals.
+Pseudo-residuals are the most common way to check whether an HMM fits the data well. Similarly to linear model residuals, pseudo-residuals should be independent and standard normally distributed if the model assumptions are satisfied.
 
 ```{r model_checking, message = FALSE, results = 'hide', cache = TRUE, fig.width = 10, fig.height = 7.5, out.width = "100%", fig.align = "center"}
 ## Plot QQ and ACF plots
@@ -261,12 +240,6 @@ The `R` package `momentuHMM` extends `moveHMM` to allow for more general HMM for
 - possibility to include any number of observed variables, rather than just step length and turning angle, with many possible probability distributions (including normal, Poisson, beta, gamma, etc.);
 
 - possibility to include covariate effects on the observation parameters, rather than only on the transition probabilities;
-
-- integration with the `R` package `crawl` to regularise or filter tracking data, including multiple imputation;
-
-- biased random walks models, for movement with centres of attraction.
-
-Here, we will mainly illustrate the first point and showcase the analysis of accelerometer data. The analysis of acceleration data using hidden Markov models is discussed in detail by @leos2017. 
 
 We start by detaching `moveHMM` if necessary (because some functions have the same names, which could cause conflicts), then loading `momentuHMM`, as well as `ggplot2` and a colour palette to create plots later on.
 
@@ -285,8 +258,7 @@ help(package = "momentuHMM")
 
 ## Data
 
-We consider accelerometer data collected for a whitetip shark over 4 days, provided by Yannis Papastamatiou (Florida International University, USA) and Yuuki Watanabe (National Institute of Polar Research, Japan). The raw data were at a very high sub-second resolution, such that we thinned them to a 1-min resolution for this analysis, for computational speed. The observed variable is the overall dynamic body acceleration (ODBA), which is a measure of the magnitude of the three-dimensional acceleration of the animal. 
-<!-- We also have another variable, the time of day, which we could consider including as a covariate. -->
+We consider accelerometer data collected for a whitetip shark over 4 days, provided by Yannis Papastamatiou (Florida International University, USA) and Yuuki Watanabe (National Institute of Polar Research, Japan). The raw data were at a very high sub-second resolution, such that we thinned them to a 1-min resolution for this analysis, for computational speed. The observed variable is the overall dynamic body acceleration (ODBA), which is a measure of the magnitude of the three-dimensional acceleration of the animal.
 
 ```{r load-data}
 # Load whitetip shark accelerometer data
@@ -320,7 +292,7 @@ We don't know a priori how many states would best capture the patterns in the ac
 
 ### Model formulation
 
-Before fitting a model, we need to specify a distribution for each observed variable. In the example, the log-ODBA variable is continuous and unbounded, so we propose modelling it using normal distributions. We also need to specify initial parameter values from which to start the likelihood optimisation. The idea is to pick values that are plausible given the data and our expectations of the states -- from such sensible initial guesses, the numerical optimiser should usually be able to identify the best parameter values (i.e. the global maximum of the likelihood). Most observed values of the variable are between -5 to -1, so we might for example choose initial means of -4 and -2 (expecting that the first state will capture the lower values, and the second state the higher values). Similarly, we can choose initial standard deviations based on how much we expect the distributions to spread. Both the distributions and the initial parameters are stored in named lists.
+Before fitting a model, we need to specify a distribution for each observed variable. In the example, the log-ODBA variable is continuous and unbounded, so we propose modelling it using normal distributions. We also need to specify initial parameter values from which to start the likelihood optimisation. The idea is to pick values that are plausible given the data and our expectations of the states.
 
 ```{r 2state-init}
 # List of observation distributions
@@ -365,8 +337,6 @@ These plots suggest that state 2 captures both the lower tail and higher tail of
 
 We again utilise Pseudo-residuals for checking the goodness of fit of our HMM.
 
-<!-- Pseudo-residuals are a common tool to check whether an HMM fits the data well. Similarly to linear model residuals, pseudo-residuals should be independent and normally distributed if the model assumptions are satisfied. The function `plotPR` produces a quantile-quantile (QQ) plot against the normal distribution, and an autocorrelation function (ACF) plot of the pseudo-residuals. -->
-
 ```{r 2state-pseudores, fig.width = 7.5, fig.height = 2.5, out.width="100%", fig.align="center", fig.show='hold'}
 # Plots of pseudo-residuals
 plotPR(hmm_2s)
@@ -405,7 +375,8 @@ The three states are easier to interpret: state 1 seems to indicate normal swimm
 ```{r 3state-pseudores, fig.width = 7.5, fig.height = 2.5, out.width="100%", fig.align="center"}
 plotPR(hmm_3s)
 ```
-While still not perfect (notable residual autocorrelation, slight lack of fit in the marginal distribution's tails), these residuals look much better than the 2-state model's residuals. To obtain a better fit, it would probably make sense to include autoregressive structures in the state-dependent process (Slide 58), as the temporal resolution of the data is high.
+
+While still not perfect, these residuals look much better than the 2-state model's residuals. To obtain a better fit, it would probably make sense to include autoregressive structures in the state-dependent process (Slide 58), as the temporal resolution of the data is high.
 
 ## Simulating from the estimated model
 
@@ -437,10 +408,6 @@ Overall, our model is able to fairly well replicate the main patterns also seen 
 We can also visualise the marginal distribution implied by our model, i.e. the overall distribution of logODBA values:
 
 ```{r 3state_sim-hist, fig.width = 7, fig.height = 5, out.width="90%", fig.align="center"}
-# getting state-dependent parameters from fitted model
-mu = hmm_3s$mle$logODBA[1,] # 3 means
-sigma = hmm_3s$mle$logODBA[2,] # 3 standard deviations
-delta = stationary(hmm_3s)[[1]] # stationary distribution
 
 par(mfrow = c(1,2))
 # histogram of original data
@@ -463,10 +430,6 @@ acf(na.omit(simdata$logODBA), main = "simulated data", bty = "n")
 ```
 
 In this case, we find a minor lack of fit regarding larger lags which is really typical for HMM analyses due to the conditional independece assumption. This can be improved by including autoregressive structures in the state-dependent process (Slide 60), but as the inferential focus typically lies on the state process, it might not be worth the extra effort.
-
-## In-house advertising
-
-If you want to delve deeper into building HMMs and their extensions by writing custom code, you should check out the vignettes of my `R` package [Lcpp](https://github.com/janoleko/Lcpp). They demonstrate how to simulate and estimate a wide range of models.
 
 # References
 
